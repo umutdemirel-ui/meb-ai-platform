@@ -5,7 +5,7 @@
   "description": "MEB müfredat tabanlı Türkçe AI öğrenme platformu — Phase 1: Foundation (Auth, Database, Curriculum Architecture, UI iskeleti)",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
