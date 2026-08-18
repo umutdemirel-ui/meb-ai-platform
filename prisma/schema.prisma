@@ -1,0 +1,196 @@
+// ==========================================================
+// MEB AI Platform — Phase 1 Database Schema
+// Kapsam: Authentication + Curriculum Architecture
+// Sonraki fazlarda: questions, exams, study_plans, ai_conversations,
+// notes, achievements, user_progress, resources (vector) eklenecek.
+// ==========================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------
+// AUTH / USERS
+// ----------------------
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Profile {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName      String
+  gradeId       String?
+  grade         Grade?    @relation(fields: [gradeId], references: [id])
+
+  targetExam    String?   // örn: "YKS", "LGS" — serbest metin, Phase 5'te enum'a taşınabilir
+  dailyStudyMinutes Int?  // hedeflenen günlük çalışma süresi
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("profiles")
+}
+
+// NextAuth gerekli tabloları (credentials + ileride OAuth için hazır)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ----------------------
+// CURRICULUM (MEB müfredatı)
+// Hiyerarşi: CurriculumVersion -> Grade -> Subject -> Unit -> Topic -> Subtopic -> LearningOutcome
+// ----------------------
+
+model CurriculumVersion {
+  id          String   @id @default(cuid())
+  label       String   @unique // örn: "2025-2026"
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  grades      Grade[]
+
+  @@map("curriculum_versions")
+}
+
+model Grade {
+  id                  String            @id @default(cuid())
+  level               Int               // 5..12
+  label               String            // "10. Sınıf"
+  curriculumVersionId String
+  curriculumVersion   CurriculumVersion @relation(fields: [curriculumVersionId], references: [id])
+
+  subjects            Subject[]
+  profiles            Profile[]
+
+  @@unique([level, curriculumVersionId])
+  @@map("grades")
+}
+
+model Subject {
+  id       String  @id @default(cuid())
+  name     String  // "Matematik"
+  slug     String  // "matematik"
+  gradeId  String
+  grade    Grade   @relation(fields: [gradeId], references: [id])
+
+  units    Unit[]
+
+  @@unique([gradeId, slug])
+  @@map("subjects")
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+
+  topics    Topic[]
+
+  @@unique([subjectId, name])
+  @@map("units")
+}
+
+model Topic {
+  id      String    @id @default(cuid())
+  name    String
+  order   Int       @default(0)
+  unitId  String
+  unit    Unit      @relation(fields: [unitId], references: [id])
+
+  subtopics       Subtopic[]
+  learningOutcomes LearningOutcome[]
+
+  @@unique([unitId, name])
+  @@map("topics")
+}
+
+model Subtopic {
+  id      String @id @default(cuid())
+  name    String
+  order   Int    @default(0)
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  learningOutcomes LearningOutcome[]
+
+  @@unique([topicId, name])
+  @@map("subtopics")
+}
+
+model LearningOutcome {
+  id          String    @id @default(cuid())
+  code        String    @unique // örn: "TR-MEB-10-MAT-001"
+  description String    @db.Text
+
+  topicId     String?
+  topic       Topic?    @relation(fields: [topicId], references: [id])
+
+  subtopicId  String?
+  subtopic    Subtopic? @relation(fields: [subtopicId], references: [id])
+
+  createdAt   DateTime  @default(now())
+
+  @@map("learning_outcomes")
+}

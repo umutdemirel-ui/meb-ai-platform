@@ -1,0 +1,37 @@
+{
+  "curriculumVersion": "2025-2026",
+  "gradeLevel": 10,
+  "gradeLabel": "10. Sınıf",
+  "subjectName": "Matematik",
+  "subjectSlug": "matematik",
+  "units": [
+    {
+      "name": "Fonksiyonlar",
+      "order": 1,
+      "topics": [
+        {
+          "name": "Fonksiyon Kavramı",
+          "order": 1,
+          "learningOutcomes": [
+            {
+              "code": "TR-MEB-10-MAT-001",
+              "description": "Fonksiyon kavramını tanır; tanım ve değer kümesi ile fonksiyonu ilişkilendirir."
+            }
+          ],
+          "subtopics": [
+            {
+              "name": "Tanım ve Değer Kümesi",
+              "order": 1,
+              "learningOutcomes": [
+                {
+                  "code": "TR-MEB-10-MAT-002",
+                  "description": "Bir fonksiyonun tanım kümesini ve değer kümesini belirler."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
